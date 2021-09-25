@@ -1,10 +1,16 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:mobilef2/models/module.dart';
 import 'package:mobilef2/widget/selection_item.dart';
 import 'package:mobilef2/style/color_constants.dart';
 import 'package:mobilef2/arch/iterable.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+
+import 'package:mobilef2/arch/converter.dart';
+
+import 'package:http/http.dart' as http;
 
 import 'main_scree.dart';
 
@@ -47,21 +53,58 @@ class _SigninScreenState extends State<SigninScreen> {
   Future<SigninScreenFutureModel> _fetchData() async {
     await Future.delayed(const Duration(seconds: 1));
 
-    final fetchedProfessions = ['proger', 'analitic', 'dis'];
-    final fetchedModules = ['vk', 'gmail', 'telegram'];
+    final modulesRespose =
+        await http.get(Uri.parse('https://api-digit.siberian-hub.ru/v1/module/'));
+    final profTypesResopnse =
+        await http.get(Uri.parse('https://api-digit.siberian-hub.ru/v1/user/types/'));
+
+    List<Module> modules = (utf8JsonConverte(modulesRespose.bodyBytes) as List)
+        .map((e) => Module.fromJson(e))
+        .toList();
+    List<String> profTypes = (utf8JsonConverte(profTypesResopnse.bodyBytes) as List)
+        .map((e) => e['name'] as String)
+        .toList();
+
+    final fetchedProfessions = profTypes;
+    final fetchedModules = modules.map((e) => e.name).toList();
 
     return SigninScreenFutureModel(fetchedProfessions, fetchedModules);
   }
 
-  Future<void> _sendData(
+  Future<bool> _sendData(
     String fio,
     String phone,
     String profession,
     List<String> moduleNames,
     List<String> moduleValues,
+    BuildContext context,
   ) async {
-    await Future.delayed(const Duration(seconds: 1));
-    return;
+    List<Map<String, String>> modules = [];
+    for (int i = 0; i < moduleNames.length; i++) {
+      modules.add({
+        'name': moduleNames[i],
+        'username': moduleValues[i],
+      });
+    }
+
+    final response = await http.post(
+      Uri.parse('https://api-digit.siberian-hub.ru/v1/user/auth/'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'fio': fio,
+        'phone': phone,
+        'type': profession,
+        'modules': modules,
+      }),
+    );
+
+    print(response.body);
+
+    Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
+
+    return response.statusCode == 201;
   }
 
   SingleChildScrollView _buildMainWidget(
@@ -75,9 +118,10 @@ class _SigninScreenState extends State<SigninScreen> {
                 const Text(
                   'Введите данные',
                   style: TextStyle(
-                      fontSize: 30,
-                      color: ColorConstants.primaryColor,
-                      fontWeight: FontWeight.w700),
+                    fontSize: 30,
+                    color: ColorConstants.primaryColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 const Padding(padding: EdgeInsets.only(bottom: 24)),
               ] +
@@ -170,7 +214,9 @@ class _SigninScreenState extends State<SigninScreen> {
 
   List<Widget> _buildModulesSection(List<String> _moduleNames) {
     moduleNames = _moduleNames;
-    moduleValues = moduleNames.map((e) => "").toList();
+    if (moduleNames.length != moduleValues.length) {
+      moduleValues = moduleNames.map((e) => "").toList();
+    }
     return _buildSection(
         'Введите логины в модулях:',
         moduleNames
@@ -223,28 +269,29 @@ class _SigninScreenState extends State<SigninScreen> {
       );
 
   void singinAction(BuildContext context) {
-    Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
-    return;
-    bool notEmpty = true;
-    notEmpty = notEmpty && fio.isNotEmpty;
-    notEmpty = notEmpty && phone.isNotEmpty;
-    notEmpty = notEmpty && profession.isNotEmpty;
+    bool notEmpty = fio.isNotEmpty && phone.isNotEmpty && profession.isNotEmpty;
     moduleValues.forEach((element) {
       notEmpty = notEmpty && element.isNotEmpty;
+      print(element);
     });
 
+    print(fio);
+    print(phone);
+    print(profession);
     if (notEmpty) {
-      _sendData(fio, phone, profession, moduleNames, moduleValues);
+      _sendData(fio, phone, profession, moduleNames, moduleValues, context);
     } else {
       showDialog(
         context: context,
-        builder: (context) =>
-            AlertDialog(title: const Text('Введите все данные'), actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'OK'),
-            child: const Text('OK'),
-          ),
-        ]),
+        builder: (context) => AlertDialog(
+          title: const Text('Введите все данные'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'OK'),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
     }
   }
