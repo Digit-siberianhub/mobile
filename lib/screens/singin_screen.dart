@@ -1,10 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
-import 'package:mobilef2/screens/selection_item.dart';
+import 'package:mobilef2/widget/selection_item.dart';
 import 'package:mobilef2/style/color_constants.dart';
 import 'package:mobilef2/arch/iterable.dart';
 import 'package:modal_bottom_sheet/modal_bottom_sheet.dart';
+
+import 'main_scree.dart';
 
 class SigninScreen extends StatefulWidget {
   const SigninScreen({Key? key}) : super(key: key);
@@ -221,6 +223,8 @@ class _SigninScreenState extends State<SigninScreen> {
       );
 
   void singinAction(BuildContext context) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
+    return;
     bool notEmpty = true;
     notEmpty = notEmpty && fio.isNotEmpty;
     notEmpty = notEmpty && phone.isNotEmpty;
