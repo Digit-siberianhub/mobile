@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
@@ -92,6 +94,19 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
+  void sendLocationToServer(double lan, double lon) async {
+    http.post(
+      Uri.parse('https://digit-geo-siberianhub.herokuapp.com/'),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'lan': lan,
+        'lon': lon,
+      }),
+    );
+  }
+
   Future _listenLocation() async {
     var serviceEnabled = await widget.location.serviceEnabled();
     if (!serviceEnabled) {
@@ -103,9 +118,14 @@ class _MainScreenState extends State<MainScreen> {
       permissionGranted = await widget.location.requestPermission();
     }
     widget.location.onLocationChanged.listen((event) {
-      print(event);
+      if (event.latitude != null && event.longitude != null) {
+        sendLocationToServer(event.latitude!, event.longitude!);
+      }
     });
     final loc = await widget.location.getLocation();
+    if (loc.latitude != null && loc.longitude != null) {
+      sendLocationToServer(loc.latitude!, loc.longitude!);
+    }
     return;
   }
 

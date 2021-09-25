@@ -60,6 +60,7 @@ class _SigninScreenState extends State<SigninScreen> {
 
     List<Module> modules = (utf8JsonConverte(modulesRespose.bodyBytes) as List)
         .map((e) => Module.fromJson(e))
+        .where((element) => element.name != 'Геопозиция')
         .toList();
     List<String> profTypes = (utf8JsonConverte(profTypesResopnse.bodyBytes) as List)
         .map((e) => e['name'] as String)
