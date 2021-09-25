@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_radar_chart/flutter_radar_chart.dart';
 import 'package:mobilef2/models/module_value.dart';
 import 'package:mobilef2/style/color_constants.dart';
@@ -60,16 +61,28 @@ class _MainScreenState extends State<MainScreen> {
     for (var element in values) {
       summ += element.sum;
     }
+
+    Map<String, int> typesAndValue = {};
+    values.map((e) => e.type).toSet().toList().forEach((element) {
+      typesAndValue[element] = 0;
+    });
+    values.forEach((element) {
+      typesAndValue[element.type] = typesAndValue[element.type]! + element.sum;
+    });
+
+    print(typesAndValue);
+
+    List<RadarItemModel> radarModels = [];
+    typesAndValue.forEach((key, value) {
+      radarModels.add(RadarItemModel(key, value));
+    });
+
     List<Widget> widgets = [];
     widgets += _buildGeneralSection(summ);
-    widgets += _buildRadarSection([
-      RadarItemModel('proger', 40),
-      RadarItemModel('logerуууууу', 20),
-      RadarItemModel('anal', 70),
-      RadarItemModel('rotуууу', 30),
-    ]);
+    widgets += _buildRadarSection(radarModels);
+    widgets += _buildDetailSection(values);
 
-    widgets += [const Padding(padding: EdgeInsets.only(bottom: 32))];
+    widgets += [const Padding(padding: EdgeInsets.only(bottom: 48))];
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,19 +124,6 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   List<Widget> _buildGeneralSection(int generalCount) {
-    final mapping = [
-      '😵',
-      '🤮',
-      '🤕',
-      '😰',
-      '☹️',
-      '😐',
-      '🙂',
-      '😌',
-      '😄',
-      '🤩',
-    ];
-
     final String emoji;
     if (generalCount < 10) {
       emoji = '😵';
@@ -159,6 +159,38 @@ class _MainScreenState extends State<MainScreen> {
     ];
   }
 
+  List<Widget> _buildDetailSection(List<ModuleValue> values) {
+    return <Widget>[
+          _buildTitle('Баллы за модули:'),
+        ] +
+        values.map((e) => _buildModuleBloc(e.module, e.sum, e.descriptions)).toList();
+  }
+
+  Widget _buildModuleBloc(String title, int value, String desc) {
+    return Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          color: ColorConstants.backgroundGray,
+          borderRadius: BorderRadius.all(Radius.circular(10)),
+        ),
+        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: Text(title,
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 17))),
+                Text('$value')
+              ],
+            ),
+            Text(desc),
+          ],
+        ));
+  }
+
   List<Widget> _buildRadarSection(List<RadarItemModel> items) {
     final width = MediaQuery.of(context).size.width;
     return [
@@ -168,7 +200,7 @@ class _MainScreenState extends State<MainScreen> {
         height: width,
         child: RadarChart(
           ticks: const [10, 50, 100],
-          features: items.map((e) => e.topic.substring(0, 2) + '.').toList(),
+          features: items.map((e) => e.topic.substring(0, 3) + '.').toList(),
           data: [items.map((e) => e.value).toList()],
           reverseAxis: false,
           sides: items.length,
@@ -193,7 +225,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildDescriptionRadar(List<RadarItemModel> items) {
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.all(8),
       decoration: const BoxDecoration(
           color: ColorConstants.backgroundGray,
@@ -205,7 +237,7 @@ class _MainScreenState extends State<MainScreen> {
                 items
                     .map((e) => Padding(
                           padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-                          child: Text('${e.topic.substring(0, 2) + '.'} - ${e.topic}'),
+                          child: Text('${e.topic.substring(0, 3) + '.'} - ${e.topic}'),
                         ))
                     .toList(),
       ),
