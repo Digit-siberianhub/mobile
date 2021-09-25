@@ -102,7 +102,12 @@ class _SigninScreenState extends State<SigninScreen> {
 
     print(response.body);
 
-    Navigator.push(context, MaterialPageRoute(builder: (context) => MainScreen()));
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => MainScreen(
+                  phone: phone,
+                )));
 
     return response.statusCode == 201;
   }
